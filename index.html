@@ -1,0 +1,187 @@
+<html lang="en" style="height: 100%; display: flex; flex-direction: column;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body style="flex: 1; display: flex; flex-direction: column;">
+    <script
+      type="text/javascript"
+      src="http://173.199.127.237/web-apps/apps/api/documents/api.js"></script>
+
+    <div style="display: flex; flex: none;">
+      <button style="flex: none;" id="previewBtn">预览</button>
+      <input style="flex: 1;" type="text" id="fileUrl" placeholder="请输入文件URL" value="https://elfinc.github.io/file-test/%E5%85%AB%E5%BB%93%E7%AC%AC%E4%B8%80%E7%A7%8D%E5%B7%A5%E4%BD%9C%E7%A5%A8%E4%B8%80%E6%AE%B5.doc">
+    </div>
+
+    <div style="flex: 1; position: relative;">
+      <div id="preview"></div>
+    </div>
+
+    <script type="module">
+      console.log('DocsAPI:', DocsAPI);
+      const previewBtn = document.getElementById('previewBtn');
+      const convertBtn = document.getElementById('convertBtn');
+      const fileUrl = document.getElementById('fileUrl');
+
+      async function convertToPdf(docUrl, fileKey, title) {
+        const payload = {
+          async: false,
+          filetype: title.split('.').pop(),
+          key: fileKey,
+          outputtype: 'pdf',
+          title: title,
+          url: docUrl
+        };
+        const API_HOST = 'http://173.199.127.237'
+        const resp = await fetch(`${API_HOST}/converter`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!resp.ok) throw new Error('转换请求失败：' + resp.status);
+        const data = await resp.json();
+        if (!data.endConvert) throw new Error('转换未完成');
+        return data.fileUrl; // 返回最终的 PDF 下载 URL
+      }
+
+      previewBtn.addEventListener('click', async () => {
+        // 这里我们要预览office
+        const url = fileUrl.value
+        const fileType = decodeURIComponent(url).split('.').pop()
+        const fileName = decodeURIComponent(url).split('/').pop()
+        const documentType = {
+          'doc': 'word',
+          'docx': 'word',
+          'xls': 'cell',
+          'xlsx': 'cell',
+          'ppt': 'slide',
+          'pptx': 'slide',
+        }[fileType]
+        console.log('fileType:', fileType)
+        console.log('fileName:', fileName)
+        const config = {
+          type: 'embedded',
+          document: {
+            // 文件类型
+            fileType: fileType,
+            title: fileName,
+            url: url,
+          },
+          editorConfig: {
+            lang: 'zh-CN',
+            mode: 'view',
+            customization: {
+              about: false,
+              anonymous: {
+                request: false,
+              },
+              autosave: false,
+              close: {
+                visible: false,
+              },
+              comments: false,
+              compactHeader: false,
+              compactToolbar: false,
+              compatibleFeatures: false,
+              // features: {
+              //   roles: true,
+              //   spellcheck: {
+              //     mode: true,
+              //     change: true,
+              //   },
+              //   tabBackground: {
+              //     mode: "header",
+              //     change: true,
+              //   },
+              //   tabStyle: {
+              //     mode: "fill",
+              //     change: true,
+              //   },
+              // },
+              feedback: {
+                url: "https://example.com",
+                visible: false,
+              },
+              // font: {
+              //   name: "Arial",
+              //   size: "11px",
+              // },
+              forcesave: false,
+              help: false,
+              hideNotes: true,
+              hideRightMenu: true,
+              hideRulers: true,
+              integrationMode: "embed",
+              layout: {
+                header: {
+                  editMode: true,
+                  save: false,
+                  users: false,
+                },
+                leftMenu: {
+                  mode: true,
+                  navigation: true,
+                  spellcheck: true,
+                },
+                rightMenu: {
+                  mode: true,
+                },
+                statusBar: {
+                  actionStatus: true,
+                  docLang: true,
+                  textLang: true,
+                },
+                toolbar: {
+                  collaboration: {
+                    mailmerge: true,
+                  },
+                  draw: true,
+                  file: {
+                    close: true,
+                    info: true,
+                    save: true,
+                    settings: true,
+                  },
+                  home: {},
+                  layout: true,
+                  plugins: true,
+                  protect: true,
+                  references: true,
+                  save: true,
+                  view: {
+                    navigation: true,
+                  },
+                },
+              },
+            },
+          },
+          documentType: documentType, // 预览区域的宽度
+          width: '100%', // 预览区域的高度
+          height: '100%',
+        };
+        const docEditor = new DocsAPI.DocEditor('preview', config);    
+      });
+
+      convertBtn.addEventListener('click', async () => {
+        // 这里我们要转换office
+        const url = fileUrl.value
+        const fileType = decodeURIComponent(url).split('.').pop()
+        const fileName = decodeURIComponent(url).split('/').pop()
+        const fileKey = Math.random().toString(36).substring(2)
+        const title = fileName
+        try {
+          const pdfUrl = await convertToPdf(url, fileKey, title)
+          window.open(pdfUrl)
+          console.log('pdfUrl:', pdfUrl)
+        } catch (error) {
+          console.error('转换失败:', error)
+        }
+      })
+    </script>
+  </body>
+</html>     
